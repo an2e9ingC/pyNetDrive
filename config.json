@@ -1,0 +1,21 @@
+{
+  "mappings": [
+    {
+      "nas_path": "\\\\NAS4MrLady\\home",
+      "drive": "N:",
+      "enabled": true
+    },
+    {
+      "nas_path": "\\\\NAS4MrLady\\home_public",
+      "drive": "P:",
+      "enabled": true
+    }
+  ],
+  "last_user": "自动",
+  "auto_startup": false,
+  "saved_password": null,
+  "user_mapping": {
+    "xuchuan": "mr",
+    "ruiwa": "lady"
+  }
+}

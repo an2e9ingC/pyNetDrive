@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python openNetDrive.py)",
+      "Bash(dir /b e:workspacepynas_connector)"
+    ]
+  }
+}
