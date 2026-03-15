@@ -36,6 +36,7 @@ ENV/
 # Runtime files
 logs/
 *.log
+config.json
 
 # OS
 .DS_Store
