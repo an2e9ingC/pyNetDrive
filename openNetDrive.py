@@ -31,12 +31,22 @@ except ImportError:
 # ==========================================
 # 配置文件路径
 # ==========================================
-CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
+def get_base_path():
+    """获取程序运行的基础路径（兼容 PyInstaller 打包）"""
+    if getattr(sys, 'frozen', False):
+        # PyInstaller 打包后的可执行文件
+        return os.path.dirname(sys.executable)
+    else:
+        # 开发环境
+        return os.path.dirname(os.path.abspath(__file__))
+
+BASE_PATH = get_base_path()
+CONFIG_FILE = os.path.join(BASE_PATH, "config.json")
 
 # ==========================================
 # 日志配置
 # ==========================================
-LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
+LOG_DIR = os.path.join(BASE_PATH, "logs")
 os.makedirs(LOG_DIR, exist_ok=True)
 
 log_file = os.path.join(LOG_DIR, f"openNetDrive_{datetime.now().strftime('%Y%m%d')}.log")
@@ -447,7 +457,7 @@ class OpenNetDriveApp:
         self.root.geometry(f"+{x}+{y}")
 
     def _init_size(self):
-        """根据内容初始化窗口大小"""
+        """根据内容初始化窗口大小并居中"""
         self.root.update_idletasks()
         w = self.root.winfo_reqwidth()
         h = self.root.winfo_reqheight()
@@ -456,6 +466,8 @@ class OpenNetDriveApp:
         new_h = int(h * 0.9)
         self.root.minsize(max(new_w, 1020), max(new_h, 700))
         self.root.geometry(f"{max(new_w, 1020)}x{max(new_h, 700)}")
+        # 重新居中窗口
+        self._center_on_primary_monitor()
 
     def _build_ui(self):
         self._center_on_primary_monitor()
