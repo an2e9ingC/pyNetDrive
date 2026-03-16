@@ -42,3 +42,11 @@ config.json
 .DS_Store
 Thumbs.db
 
+# PyInstaller
+*.spec
+build/
+dist/
+
+# Release (optional to commit)
+# release/
+

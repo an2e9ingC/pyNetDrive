@@ -1,0 +1,18 @@
+openNetDrive - Windows NAS 网络驱动器自动连接工具
+
+使用方法：
+1. 双击运行 openNetDrive.exe
+2. 输入 NAS 密码
+3. 点击「连接」按钮
+
+注意事项：
+- 首次运行会自动生成 config.json 配置文件
+- 日志文件保存在 logs 目录
+- 支持一键添加开机自启
+
+配置文件说明：
+- config.json: 映射配置、用户映射关系等
+- 密码使用 base64 编码存储，请勿分享配置文件
+
+技术支持：
+详见 README.md

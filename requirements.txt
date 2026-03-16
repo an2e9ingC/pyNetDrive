@@ -1,0 +1,4 @@
+# openNetDrive 依赖
+# tkinter 是 Python 内置库，无需安装
+# PyInstaller 用于打包
+pyinstaller>=5.0
