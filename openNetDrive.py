@@ -59,7 +59,7 @@ def get_system_username() -> str:
     except Exception:
         return os.environ.get('USERNAME', 'unknown')
 
-def determine_target_user(sys_user: str, force_user: str = None, config_mgr: ConfigManager = None) -> str:
+def determine_target_user(sys_user: str, force_user: str = None, config_mgr: 'ConfigManager' = None) -> str:
     """根据系统用户名确定 NAS 用户名"""
     if force_user and str(force_user).strip() and str(force_user).strip().lower() not in ("自动", ""):
         return str(force_user).strip().lower()
