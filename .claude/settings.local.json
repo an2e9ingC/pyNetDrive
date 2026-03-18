@@ -8,7 +8,10 @@
       "Bash(timeout 10 python test_dialog.py)",
       "Bash(start release/openNetDrive.exe)",
       "Bash(python -c \"import openNetDrive; print\\(''Import OK''\\)\")",
-      "Bash(git commit -m \"feat: 添加卸载功能:*)"
+      "Bash(git commit -m \"feat: 添加卸载功能:*)",
+      "Bash(timeout 30 python e:workspacepyopenNetDrivetest_btn.py)",
+      "Bash(timeout 30 python test_btn.py)",
+      "Bash(git commit -m \"fix: 修复卸载对话框按钮显示问题:*)"
     ]
   }
 }

@@ -1302,67 +1302,57 @@ class OpenNetDriveApp:
     def _do_uninstall(self):
         """执行卸载流程（带配置选项）"""
         logger.info("_do_uninstall 被调用")
-        # 创建自定义对话框 - 使用弹窗方式
+        # 创建自定义对话框
         dialog = tk.Toplevel(self.root)
         dialog.title("确认卸载")
-
-        # 设置对话框属性
         dialog.resizable(False, False)
 
-        # 主框架 - 使用固定宽度，高度自适应
-        main_frame = tk.Frame(dialog, bg=COLORS['bg_white'])
-        main_frame.pack(fill=tk.BOTH, padx=20, pady=20)
+        # 内容框架 - 直接用 dialog 作为父容器
+        content_frame = tk.Frame(dialog, bg=COLORS['bg_white'])
+        content_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
 
         # 标题
-        title_label = tk.Label(main_frame, text="卸载确认", font=('Microsoft YaHei UI', 14, 'bold'),
-                 fg=COLORS['btn_red'], bg=COLORS['bg_white'])
-        title_label.pack(anchor=tk.W)
+        tk.Label(content_frame, text="卸载确认", font=('Microsoft YaHei UI', 14, 'bold'),
+                 fg=COLORS['btn_red'], bg=COLORS['bg_white']).pack(anchor=tk.W)
 
-        info_label = tk.Label(main_frame, text="即将卸载 openNetDrive，将删除以下内容:",
-                 font=FONTS['label'], fg=COLORS['text_muted'],
-                 bg=COLORS['bg_white'])
-        info_label.pack(anchor=tk.W, pady=(15, 10))
+        tk.Label(content_frame, text="即将卸载 openNetDrive，将删除以下内容:",
+                 font=('Microsoft YaHei UI', 10), fg=COLORS['text_muted'],
+                 bg=COLORS['bg_white']).pack(anchor=tk.W, pady=(15, 10))
 
         # 选项框架
-        options_frame = tk.Frame(main_frame, bg=COLORS['bg_white'])
+        options_frame = tk.Frame(content_frame, bg=COLORS['bg_white'])
         options_frame.pack(fill=tk.X, anchor=tk.W)
 
-        # 固定删除项
-        item1 = tk.Label(options_frame, text="  • 开机启动项", font=FONTS['label'],
+        tk.Label(options_frame, text="  • 开机启动项", font=('Microsoft YaHei UI', 10),
                  fg=COLORS['text_primary'], bg=COLORS['bg_white'],
-                 anchor=tk.W)
-        item1.pack(fill=tk.X)
-        item2 = tk.Label(options_frame, text="  • 桌面/开始菜单快捷方式", font=FONTS['label'],
+                 anchor=tk.W).pack(fill=tk.X)
+        tk.Label(options_frame, text="  • 桌面/开始菜单快捷方式", font=('Microsoft YaHei UI', 10),
                  fg=COLORS['text_primary'], bg=COLORS['bg_white'],
-                 anchor=tk.W)
-        item2.pack(fill=tk.X)
+                 anchor=tk.W).pack(fill=tk.X)
 
         # 可选删除项
         var_keep_config = tk.BooleanVar(value=True)
         var_keep_logs = tk.BooleanVar(value=True)
 
-        chk_config = tk.Checkbutton(options_frame, text="  保留配置文件 (config.json)",
-                       font=FONTS['label'], fg=COLORS['text_primary'],
-                       bg=COLORS['bg_white'], selectcolor=COLORS['bg_secondary'],
-                       variable=var_keep_config, anchor=tk.W)
-        chk_config.pack(fill=tk.X, pady=(10, 0))
+        tk.Checkbutton(options_frame, text="  保留配置文件 (config.json)",
+                       font=('Microsoft YaHei UI', 10), fg=COLORS['text_primary'],
+                       bg=COLORS['bg_white'], variable=var_keep_config,
+                       anchor=tk.W, selectcolor=COLORS['bg_secondary']).pack(fill=tk.X, pady=(10, 0))
 
-        chk_logs = tk.Checkbutton(options_frame, text="  保留日志文件 (logs/*)",
-                       font=FONTS['label'], fg=COLORS['text_primary'],
-                       bg=COLORS['bg_white'], selectcolor=COLORS['bg_secondary'],
-                       variable=var_keep_logs, anchor=tk.W)
-        chk_logs.pack(fill=tk.X)
+        tk.Checkbutton(options_frame, text="  保留日志文件 (logs/*)",
+                       font=('Microsoft YaHei UI', 10), fg=COLORS['text_primary'],
+                       bg=COLORS['bg_white'], variable=var_keep_logs,
+                       anchor=tk.W, selectcolor=COLORS['bg_secondary']).pack(fill=tk.X)
 
         # 提示信息
-        note_label = tk.Label(main_frame, text="\n注意：程序文件将保留，可手动删除整个目录。",
-                 font=FONTS['caption'], fg=COLORS['warning'],
+        tk.Label(content_frame, text="\n注意：程序文件将保留，可手动删除整个目录。",
+                 font=('Microsoft YaHei UI', 8), fg=COLORS['warning'],
                  bg=COLORS['bg_white'], wraplength=360,
-                 justify=tk.LEFT)
-        note_label.pack(anchor=tk.W, fill=tk.X, pady=(10, 0))
+                 justify=tk.LEFT).pack(anchor=tk.W, fill=tk.X, pady=(10, 0))
 
-        # 按钮框架 - 固定在底部
-        btn_frame = tk.Frame(main_frame, bg=COLORS['bg_white'])
-        btn_frame.pack(side=tk.BOTTOM, fill=tk.X, pady=(15, 0))
+        # 按钮框架 - 放在 content_frame 外面，直接在 dialog 上
+        btn_frame = tk.Frame(dialog, bg=COLORS['bg_white'])
+        btn_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=20, pady=(0, 15))
 
         def on_cancel():
             dialog.destroy()
@@ -1371,56 +1361,43 @@ class OpenNetDriveApp:
             dialog.destroy()
             self._execute_uninstall(var_keep_config.get(), var_keep_logs.get())
 
-        # 取消按钮
-        btn_cancel = tk.Button(btn_frame, text="取消", font=FONTS['button'],
-                               fg=COLORS['bg_white'], bg=COLORS['btn_gray'],
-                               activeforeground=COLORS['bg_white'], activebackground=COLORS['btn_gray'],
-                               relief=tk.FLAT, bd=0, padx=24, pady=6, cursor='hand2',
-                               command=on_cancel)
-        btn_cancel.pack(side=tk.RIGHT, padx=(5, 0))
-
         # 确认卸载按钮
-        btn_confirm = tk.Button(btn_frame, text="确认卸载", font=FONTS['button'],
-                                fg=COLORS['bg_white'], bg=COLORS['btn_red'],
-                                activeforeground=COLORS['bg_white'], activebackground=COLORS['btn_red_hover'],
-                                relief=tk.FLAT, bd=0, padx=24, pady=6, cursor='hand2',
+        btn_confirm = tk.Button(btn_frame, text="确认卸载", font=('Microsoft YaHei UI', 10, 'bold'),
+                                fg='#ffffff', bg='#dc2626',
+                                activeforeground='#ffffff', activebackground='#b91c1c',
+                                relief=tk.RAISED, bd=2, padx=20, pady=6, cursor='hand2',
                                 command=on_confirm)
-        btn_confirm.pack(side=tk.RIGHT, padx=(5, 0))
-        self._bind_hover(btn_confirm, COLORS['btn_red'], COLORS.get('btn_red_hover', COLORS['btn_red']))
+        btn_confirm.pack(side=tk.RIGHT, padx=(8, 0))
 
-        # 强制更新并获取实际大小
+        # 取消按钮
+        btn_cancel = tk.Button(btn_frame, text="取消", font=('Microsoft YaHei UI', 10),
+                               fg='#ffffff', bg='#6b7280',
+                               activeforeground='#ffffff', activebackground='#555555',
+                               relief=tk.RAISED, bd=2, padx=20, pady=6, cursor='hand2',
+                               command=on_cancel)
+        btn_cancel.pack(side=tk.RIGHT, padx=(8, 0))
+
+        # 设置窗口大小和位置
         self.root.update_idletasks()
         dialog.update_idletasks()
 
-        # 获取主窗口位置
         root_x = self.root.winfo_x()
         root_y = self.root.winfo_y()
         root_width = self.root.winfo_width()
         root_height = self.root.winfo_height()
 
-        # 固定对话框大小
         dialog_width = 420
-        dialog_height = 320
+        dialog_height = 340
 
-        # 计算居中位置
         x = root_x + (root_width - dialog_width) // 2
         y = root_y + (root_height - dialog_height) // 2
 
-        # 先设置大小再生成
         dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
-
-        # 提升到最前面
         dialog.attributes('-topmost', True)
-        dialog.lift()
-
-        # 设置为模态对话框
         dialog.transient(self.root)
         dialog.grab_set()
-        dialog.focus_set()
 
         logger.info(f"对话框位置：{dialog_width}x{dialog_height}+{x}+{y}")
-
-        # 等待对话框关闭
         self.root.wait_window(dialog)
 
     def _execute_uninstall(self, keep_config=False, keep_logs=False):
