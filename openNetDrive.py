@@ -220,6 +220,98 @@ def is_in_startup() -> bool:
 
 
 # ==========================================
+# 卸载功能
+# ==========================================
+
+def get_shortcut_paths() -> list:
+    """获取桌面和开始菜单快捷方式路径列表"""
+    paths = []
+    try:
+        # 桌面快捷方式
+        desktop = os.path.join(os.environ.get('USERPROFILE', ''), 'Desktop')
+        if os.path.isdir(desktop):
+            for ext in ['.lnk', '.exe']:
+                lnk = os.path.join(desktop, f'openNetDrive{ext}')
+                if os.path.exists(lnk):
+                    paths.append(lnk)
+        # 开始菜单快捷方式
+        startmenu = os.path.join(os.environ.get('APPDATA', ''), r'Microsoft\Windows\Start Menu\Programs')
+        if os.path.isdir(startmenu):
+            for ext in ['.lnk', '.exe']:
+                lnk = os.path.join(startmenu, f'openNetDrive{ext}')
+                if os.path.exists(lnk):
+                    paths.append(lnk)
+    except Exception:
+        pass
+    return paths
+
+
+def delete_shortcuts() -> list:
+    """删除桌面和开始菜单快捷方式，返回已删除的路径列表"""
+    deleted = []
+    for path in get_shortcut_paths():
+        try:
+            os.remove(path)
+            deleted.append(path)
+            logger.info(f"已删除快捷方式：{path}")
+        except Exception as e:
+            logger.warning(f"删除快捷方式失败 {path}: {e}")
+    return deleted
+
+
+def cleanup_user_data() -> list:
+    """清理配置文件和日志文件，返回已删除的文件列表"""
+    deleted = []
+    # 配置文件
+    try:
+        if os.path.exists(CONFIG_FILE):
+            os.remove(CONFIG_FILE)
+            deleted.append(CONFIG_FILE)
+            logger.info(f"已删除配置文件：{CONFIG_FILE}")
+    except Exception as e:
+        logger.warning(f"删除配置文件失败：{e}")
+    # 日志文件
+    try:
+        if os.path.isdir(LOG_DIR):
+            for f in os.listdir(LOG_DIR):
+                try:
+                    fp = os.path.join(LOG_DIR, f)
+                    if os.path.isfile(fp):
+                        os.remove(fp)
+                        deleted.append(fp)
+                except Exception:
+                    pass
+            # 尝试删除空日志目录
+            try:
+                os.rmdir(LOG_DIR)
+                deleted.append(LOG_DIR)
+                logger.info(f"已删除日志目录：{LOG_DIR}")
+            except Exception:
+                pass
+    except Exception as e:
+        logger.warning(f"清理日志文件失败：{e}")
+    return deleted
+
+
+def uninstall_program() -> bool:
+    """
+    完整卸载程序
+    返回 True 表示卸载成功，False 表示失败
+    """
+    logger.info("开始卸载 openNetDrive...")
+    # 1. 删除启动项
+    remove_from_startup()
+    logger.info("已删除开机启动项")
+    # 2. 删除快捷方式
+    deleted_shortcuts = delete_shortcuts()
+    logger.info(f"已删除 {len(deleted_shortcuts)} 个快捷方式")
+    # 3. 清理用户数据
+    deleted_data = cleanup_user_data()
+    logger.info(f"已清理 {len(deleted_data)} 个用户数据文件")
+    return True
+
+
+# ==========================================
 # 祖母绿主题配色
 # ==========================================
 COLORS = {
@@ -657,14 +749,25 @@ class OpenNetDriveApp:
         inner = tk.Frame(card, bg=COLORS['bg_white'])
         inner.pack(fill=tk.X, padx=20, pady=10)
 
-        # 左侧：开机自启
+        # 左侧：开机自启 + 卸载按钮
+        left_frame = tk.Frame(inner, bg=COLORS['bg_white'])
+        left_frame.pack(side=tk.LEFT)
+
         self.var_startup = tk.BooleanVar(value=is_in_startup())
-        self.cb_startup = tk.Checkbutton(inner, text="开机自动运行", variable=self.var_startup,
+        self.cb_startup = tk.Checkbutton(left_frame, text="开机自动运行", variable=self.var_startup,
                                          font=FONTS['label'], fg=COLORS['text_muted'],
                                          bg=COLORS['bg_white'], selectcolor=COLORS['bg_secondary'],
                                          activebackground=COLORS['bg_white'], activeforeground=COLORS['text_primary'],
                                          command=self._toggle_startup)
         self.cb_startup.pack(side=tk.LEFT)
+
+        # 卸载按钮 - 红色边框，白色背景
+        self.btn_uninstall = tk.Button(left_frame, text="卸载软件", font=FONTS['label'],
+                                       fg=COLORS['btn_red'], bg=COLORS['bg_white'],
+                                       activeforeground=COLORS['btn_red'], activebackground=COLORS['bg_white'],
+                                       relief=tk.SOLID, bd=1, padx=12, pady=4, cursor='hand2',
+                                       command=self._do_uninstall)
+        self.btn_uninstall.pack(side=tk.LEFT, padx=(20, 0))
 
         # 右侧：连接按钮、断开所有按钮和状态
         btn_container = tk.Frame(inner, bg=COLORS['bg_white'])
@@ -1195,6 +1298,178 @@ class OpenNetDriveApp:
                 messagebox.showinfo("开机启动", "已取消开机自动运行")
             else:
                 logger.warning("取消开机启动失败或未找到启动项")
+
+    def _do_uninstall(self):
+        """执行卸载流程（带配置选项）"""
+        logger.info("_do_uninstall 被调用")
+        # 创建自定义对话框 - 使用弹窗方式
+        dialog = tk.Toplevel(self.root)
+        dialog.title("确认卸载")
+
+        # 设置对话框属性
+        dialog.resizable(False, False)
+
+        # 主框架 - 使用固定宽度，高度自适应
+        main_frame = tk.Frame(dialog, bg=COLORS['bg_white'])
+        main_frame.pack(fill=tk.BOTH, padx=20, pady=20)
+
+        # 标题
+        title_label = tk.Label(main_frame, text="卸载确认", font=('Microsoft YaHei UI', 14, 'bold'),
+                 fg=COLORS['btn_red'], bg=COLORS['bg_white'])
+        title_label.pack(anchor=tk.W)
+
+        info_label = tk.Label(main_frame, text="即将卸载 openNetDrive，将删除以下内容:",
+                 font=FONTS['label'], fg=COLORS['text_muted'],
+                 bg=COLORS['bg_white'])
+        info_label.pack(anchor=tk.W, pady=(15, 10))
+
+        # 选项框架
+        options_frame = tk.Frame(main_frame, bg=COLORS['bg_white'])
+        options_frame.pack(fill=tk.X, anchor=tk.W)
+
+        # 固定删除项
+        item1 = tk.Label(options_frame, text="  • 开机启动项", font=FONTS['label'],
+                 fg=COLORS['text_primary'], bg=COLORS['bg_white'],
+                 anchor=tk.W)
+        item1.pack(fill=tk.X)
+        item2 = tk.Label(options_frame, text="  • 桌面/开始菜单快捷方式", font=FONTS['label'],
+                 fg=COLORS['text_primary'], bg=COLORS['bg_white'],
+                 anchor=tk.W)
+        item2.pack(fill=tk.X)
+
+        # 可选删除项
+        var_keep_config = tk.BooleanVar(value=True)
+        var_keep_logs = tk.BooleanVar(value=True)
+
+        chk_config = tk.Checkbutton(options_frame, text="  保留配置文件 (config.json)",
+                       font=FONTS['label'], fg=COLORS['text_primary'],
+                       bg=COLORS['bg_white'], selectcolor=COLORS['bg_secondary'],
+                       variable=var_keep_config, anchor=tk.W)
+        chk_config.pack(fill=tk.X, pady=(10, 0))
+
+        chk_logs = tk.Checkbutton(options_frame, text="  保留日志文件 (logs/*)",
+                       font=FONTS['label'], fg=COLORS['text_primary'],
+                       bg=COLORS['bg_white'], selectcolor=COLORS['bg_secondary'],
+                       variable=var_keep_logs, anchor=tk.W)
+        chk_logs.pack(fill=tk.X)
+
+        # 提示信息
+        note_label = tk.Label(main_frame, text="\n注意：程序文件将保留，可手动删除整个目录。",
+                 font=FONTS['caption'], fg=COLORS['warning'],
+                 bg=COLORS['bg_white'], wraplength=360,
+                 justify=tk.LEFT)
+        note_label.pack(anchor=tk.W, fill=tk.X, pady=(10, 0))
+
+        # 按钮框架 - 固定在底部
+        btn_frame = tk.Frame(main_frame, bg=COLORS['bg_white'])
+        btn_frame.pack(side=tk.BOTTOM, fill=tk.X, pady=(15, 0))
+
+        def on_cancel():
+            dialog.destroy()
+
+        def on_confirm():
+            dialog.destroy()
+            self._execute_uninstall(var_keep_config.get(), var_keep_logs.get())
+
+        # 取消按钮
+        btn_cancel = tk.Button(btn_frame, text="取消", font=FONTS['button'],
+                               fg=COLORS['bg_white'], bg=COLORS['btn_gray'],
+                               activeforeground=COLORS['bg_white'], activebackground=COLORS['btn_gray'],
+                               relief=tk.FLAT, bd=0, padx=24, pady=6, cursor='hand2',
+                               command=on_cancel)
+        btn_cancel.pack(side=tk.RIGHT, padx=(5, 0))
+
+        # 确认卸载按钮
+        btn_confirm = tk.Button(btn_frame, text="确认卸载", font=FONTS['button'],
+                                fg=COLORS['bg_white'], bg=COLORS['btn_red'],
+                                activeforeground=COLORS['bg_white'], activebackground=COLORS['btn_red_hover'],
+                                relief=tk.FLAT, bd=0, padx=24, pady=6, cursor='hand2',
+                                command=on_confirm)
+        btn_confirm.pack(side=tk.RIGHT, padx=(5, 0))
+        self._bind_hover(btn_confirm, COLORS['btn_red'], COLORS.get('btn_red_hover', COLORS['btn_red']))
+
+        # 强制更新并获取实际大小
+        self.root.update_idletasks()
+        dialog.update_idletasks()
+
+        # 获取主窗口位置
+        root_x = self.root.winfo_x()
+        root_y = self.root.winfo_y()
+        root_width = self.root.winfo_width()
+        root_height = self.root.winfo_height()
+
+        # 固定对话框大小
+        dialog_width = 420
+        dialog_height = 320
+
+        # 计算居中位置
+        x = root_x + (root_width - dialog_width) // 2
+        y = root_y + (root_height - dialog_height) // 2
+
+        # 先设置大小再生成
+        dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
+
+        # 提升到最前面
+        dialog.attributes('-topmost', True)
+        dialog.lift()
+
+        # 设置为模态对话框
+        dialog.transient(self.root)
+        dialog.grab_set()
+        dialog.focus_set()
+
+        logger.info(f"对话框位置：{dialog_width}x{dialog_height}+{x}+{y}")
+
+        # 等待对话框关闭
+        self.root.wait_window(dialog)
+
+    def _execute_uninstall(self, keep_config=False, keep_logs=False):
+        """执行卸载（内部方法）"""
+        try:
+            # 1. 删除启动项
+            remove_from_startup()
+            logger.info("已删除开机启动项")
+
+            # 2. 删除快捷方式
+            deleted_shortcuts = delete_shortcuts()
+            logger.info(f"已删除 {len(deleted_shortcuts)} 个快捷方式")
+
+            # 3. 清理用户数据（根据选项）
+            if not keep_config and os.path.exists(CONFIG_FILE):
+                try:
+                    os.remove(CONFIG_FILE)
+                    logger.info("已删除配置文件")
+                except Exception as e:
+                    logger.warning(f"删除配置文件失败：{e}")
+
+            if not keep_logs and os.path.isdir(LOG_DIR):
+                try:
+                    for f in os.listdir(LOG_DIR):
+                        fp = os.path.join(LOG_DIR, f)
+                        if os.path.isfile(fp):
+                            os.remove(fp)
+                    logger.info("已删除日志文件")
+                except Exception as e:
+                    logger.warning(f"删除日志文件失败：{e}")
+
+            logger.info("卸载完成")
+
+            # 完成提示
+            result_msg = "openNetDrive 已卸载。\n\n快捷方式和开机启动项已删除。"
+            if keep_config:
+                result_msg += "\n配置文件已保留。"
+            if keep_logs:
+                result_msg += "\n日志文件已保留。"
+            result_msg += "\n\n程序文件可手动删除整个目录。"
+
+            messagebox.showinfo("卸载完成", result_msg)
+
+            # 更新 UI 状态
+            self.var_startup.set(False)
+
+        except Exception as e:
+            logger.error(f"卸载失败：{e}")
+            messagebox.showerror("错误", f"卸载失败：{e}")
 
     def run(self):
         self.root.mainloop()

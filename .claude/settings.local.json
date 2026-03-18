@@ -3,7 +3,12 @@
     "allow": [
       "Bash(python openNetDrive.py)",
       "Bash(dir /b e:workspacepynas_connector)",
-      "Bash(python build_release.py)"
+      "Bash(python build_release.py)",
+      "Bash(python -m pip install pyinstaller -q)",
+      "Bash(timeout 10 python test_dialog.py)",
+      "Bash(start release/openNetDrive.exe)",
+      "Bash(python -c \"import openNetDrive; print\\(''Import OK''\\)\")",
+      "Bash(git commit -m \"feat: 添加卸载功能:*)"
     ]
   }
 }
